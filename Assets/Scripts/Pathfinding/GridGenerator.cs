@@ -8,10 +8,13 @@ public class GridGenerator : MonoBehaviour
 {
     public static GridGenerator Singleton { get; private set; }
 
+    [Header("Node settings")]
     public GridNode prefab_GridNode;
+    public Vector3Int gridSize = new Vector3Int(40, 1, 40);
     public Vector3 gridStart = new Vector3(0, 0, 0);
-    public Vector3Int gridSize = new Vector3Int(20, 1, 20);
-    public Vector3 nodeSize = new Vector3(1, 2, 1);
+    public Vector3 nodeSize = new Vector3(1, 2.5F, 1);
+    public Vector3 nodeStart = new Vector3(-0.5F, 0, -0.5F);
+    [Header("Layers")]
     public LayerMask layerObstacles;
     public LayerMask layerWalls;
     public LayerMask layerUnits;
@@ -139,9 +142,9 @@ public class GridGenerator : MonoBehaviour
         float auxX = (worldPos.x / nodeSize.x) - gridStart.x;
         float auxY = (worldPos.y / nodeSize.y) - gridStart.y;
         float auxZ = (worldPos.z / nodeSize.z) - gridStart.z;
-        int x = Mathf.RoundToInt(auxX);
-        int y = Mathf.RoundToInt(auxY);
-        int z = Mathf.RoundToInt(auxZ);
+        int x = (int)Math.Round(auxX, MidpointRounding.AwayFromZero);
+        int y = (int)Math.Round(auxY, MidpointRounding.AwayFromZero);
+        int z = (int)Math.Round(auxZ, MidpointRounding.AwayFromZero);
         if (x < 0 || x > gridSize.x - 1) return null;
         if (y < 0 || y > gridSize.y - 1) return null;
         if (z < 0 || z > gridSize.z - 1) return null;
@@ -169,19 +172,15 @@ public class GridGenerator : MonoBehaviour
 
     public Vector3 ClampWorldPosToGrid(Vector3 worldPos, Vector3 innerLimits)
     {
-        float halfX = nodeSize.x / 2F;
-        float halfY = nodeSize.y / 2F;
-        float halfZ = nodeSize.z / 2F;
-
-        float minX = gridStart.x - halfX;
+        float minX = gridStart.x - nodeStart.x;
         float maxX = minX + (gridSize.x * nodeSize.x);
         minX += innerLimits.x;
         maxX -= innerLimits.x;
 
-        float minY = gridStart.y - halfY;
+        float minY = gridStart.y - nodeStart.y;
         float maxY = minY + (gridSize.y * nodeSize.y);
 
-        float minZ = gridStart.z - halfZ;
+        float minZ = gridStart.z - nodeStart.z;
         float maxZ = minZ + (gridSize.z * nodeSize.z);
         minZ += innerLimits.z;
         maxZ -= innerLimits.z;

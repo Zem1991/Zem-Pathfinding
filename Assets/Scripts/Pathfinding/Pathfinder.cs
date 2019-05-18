@@ -22,8 +22,6 @@ public class Pathfinder
 
         GridNode startGN = _grid.GridNodeFromWorldPosition(startPos);
         GridNode targetGN = _grid.GridNodeFromWorldPosition(endPos);
-        Debug.Log("start: " + startGN.id + " | end: " + targetGN.id);
-
         PathNode startPN = new PathNode(startGN);
         PathNode targetPN = new PathNode(targetGN);
 

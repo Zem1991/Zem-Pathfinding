@@ -124,9 +124,7 @@ public class GridGeneratorGizmos : MonoBehaviour
     private void DrawGridGeneratorGizmos()
     {
         Vector3 size = Vector3.Scale(gridGenerator.gridSize, gridGenerator.nodeSize);
-        Vector3 center = gridGenerator.gridStart + (size / 2F);
-        center.x -= gridGenerator.nodeSize.x / 2F;
-        center.z -= gridGenerator.nodeSize.z / 2F;
+        Vector3 center = gridGenerator.gridStart + (size / 2F) + gridGenerator.nodeStart;
         Gizmos.color = gridSize;
         Gizmos.DrawWireCube(center, size);
     }

@@ -30,6 +30,7 @@ public class PlayerController : MonoBehaviour
     {
         CameraControl();
         MouseControl();
+        TEST_MoveUnit();
     }
 
     private void CameraControl()
@@ -44,5 +45,14 @@ public class PlayerController : MonoBehaviour
     private void MouseControl()
     {
         _pMouse.RefreshData(_pCamera.camera, currentFloor, _im.mouseSelectPress, _im.mouseSelectUp);
+    }
+
+    private void TEST_MoveUnit()
+    {
+        if (_im.mouseCommandDown && _pMouse.gridNode)
+        {
+            PlayerUnit unit = FindObjectOfType<PlayerUnit>();
+            unit.CommandMove(_pMouse.gridNode.transform.position);
+        }
     }
 }
