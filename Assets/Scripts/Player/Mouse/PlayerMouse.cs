@@ -71,7 +71,8 @@ public class PlayerMouse : MonoBehaviour
 
         if (planePos != null)
         {
-            gridNode = grid.GridNodeFromWorldPosition((Vector3)planePos);
+            Vector3 pos = (Vector3)planePos;
+            gridNode = grid.GridNodeFromWorldPosition(pos);
 
             Vector3 gridPos = grid.ClampWorldPosToGrid((Vector3)planePos, Vector3.zero);
             outsideGrid = (planePos != gridPos);

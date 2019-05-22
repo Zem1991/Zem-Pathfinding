@@ -53,3 +53,11 @@ MonoBehaviour:
   fr: {fileID: 0}
   id: {x: 0, y: 0, z: 0}
   blocked: 0
+  bl_Blocked: 0
+  b__Blocked: 0
+  br_Blocked: 0
+  l__Blocked: 0
+  r__Blocked: 0
+  fl_Blocked: 0
+  f__Blocked: 0
+  fr_Blocked: 0

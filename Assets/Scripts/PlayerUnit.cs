@@ -5,10 +5,8 @@ using UnityEngine;
 public class PlayerUnit : MonoBehaviour
 {
     private Pathfinder pathfinder;
-    private Vector3Int currentNodeId;
+    private Vector3Int? currentNodeId;
     private Vector3Int? targetNodeId;
-    private List<PathNode> pathNodes;
-    private Vector3 movementTargetPos;
 
     [Header("Unit Config")]
     public float movementSpd = 5F;
@@ -16,9 +14,14 @@ public class PlayerUnit : MonoBehaviour
     [Header("Pathfinding Data")]
     public string currentNode;
     public string targetNode;
+    public List<PathNode> pathNodes;
     public float pathSize;
     public float operations;
     public bool inMovement = false;
+    //public bool isNextMoveDone = false;//
+    public Vector3 movementTargetPos;
+    public Vector3 movementTargetDir;
+    public Vector3 movementVelocity;
 
     // Start is called before the first frame update
     void Awake()
@@ -30,27 +33,18 @@ public class PlayerUnit : MonoBehaviour
     void Update()
     {
         Movement();
-
-        currentNodeId = (Vector3Int)GridGenerator.Singleton.GridNodeIdFromWorldPosition(transform.position);
-        currentNode = currentNodeId.ToString();
-
-        if (targetNodeId == null) targetNode = "No target";
-        else targetNode = targetNodeId.ToString();
+        InspectorData();
     }
 
     public bool CommandMove(Vector3 targetPos)
     {
         inMovement = false;
         targetNodeId = GridGenerator.Singleton.GridNodeIdFromWorldPosition(targetPos);
-        if (targetNodeId == null)
+        if (targetNodeId != null)
         {
-            pathNodes = null;
-        }
-        else
-        {
-            pathNodes = new List<PathNode>();
             pathfinder.FindPath(transform.position, targetPos, out pathNodes, out pathSize, out operations);
             inMovement = true;
+            NextMove();
         }
         return inMovement;
     }
@@ -58,6 +52,24 @@ public class PlayerUnit : MonoBehaviour
     private void Movement()
     {
         if (!inMovement) return;
+
+        Vector3 frameVelocity = movementVelocity * Time.deltaTime;
+        float distance = Vector3.Distance(transform.position, movementTargetPos);
+        if (frameVelocity.magnitude > distance) frameVelocity = Vector3.ClampMagnitude(frameVelocity, distance);
+        transform.Translate(frameVelocity, Space.World);
+
+        if (transform.position == movementTargetPos)
+        {
+            //Doing this may seem redundant, but it actually fixes some floating point issues that can cause movement overshooting
+            //Moving to the bottom or left edge of the grid without this fix may cause the Unit to be read as over a tile with coordinate equal to -1
+            transform.position = movementTargetPos;
+
+            NextMove();
+        }
+    }
+
+    private void NextMove()
+    {
         if (pathNodes.Count == 0)
         {
             inMovement = false;
@@ -66,23 +78,19 @@ public class PlayerUnit : MonoBehaviour
 
         Vector3 currentPos = transform.position;
         movementTargetPos = pathNodes[0].gridNode.transform.position + GridGenerator.Singleton.nodeStart;
-        if (currentPos != movementTargetPos)
-        {
-            Vector3 angles = Quaternion.FromToRotation(currentPos, movementTargetPos).eulerAngles;
-            Vector3 moveDir = (movementTargetPos - currentPos).normalized;
-            Debug.Log(angles + " | " + moveDir);
-            float distance = Vector3.Distance(currentPos, movementTargetPos);
+        movementTargetDir = (movementTargetPos - currentPos).normalized;
+        movementVelocity = movementTargetDir * movementSpd;
+        pathNodes.RemoveAt(0);
+    }
 
-            Vector3 rotatedMovementTargetPos = Quaternion.Euler(angles.x, angles.y, 0) * moveDir;
-            rotatedMovementTargetPos = rotatedMovementTargetPos.normalized * movementSpd;
-            Vector3 deltaTimeMovementTargetPos = rotatedMovementTargetPos * Time.deltaTime;
-            deltaTimeMovementTargetPos = Vector3.ClampMagnitude(deltaTimeMovementTargetPos, distance);
-            transform.Translate(deltaTimeMovementTargetPos, Space.World);
-        }
-        else
-        {
-            pathNodes.RemoveAt(0);
-        }
+    private void InspectorData()
+    {
+        currentNodeId = GridGenerator.Singleton.GridNodeIdFromWorldPosition(transform.position);
+        if (currentNodeId == null) currentNode = "No grid node";
+        else currentNode = currentNodeId.ToString();
+
+        if (targetNodeId == null) targetNode = "No grid node";
+        else targetNode = targetNodeId.ToString();
     }
 
     private void OnDrawGizmos()

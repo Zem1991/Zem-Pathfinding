@@ -123,12 +123,6 @@ public class GridGenerator : MonoBehaviour
         }
     }
 
-    //Commented because not used
-    //public GridNode GridNodeFromId(Vector3Int id)
-    //{
-    //    return gridNodes[id.x, id.y, id.z];
-    //}
-
     public GridNode GridNodeFromWorldPosition(Vector3 worldPos)
     {
         Vector3Int? attempt = GridNodeIdFromWorldPosition(worldPos);
@@ -139,12 +133,12 @@ public class GridGenerator : MonoBehaviour
 
     public Vector3Int? GridNodeIdFromWorldPosition(Vector3 worldPos)
     {
-        float auxX = (worldPos.x / nodeSize.x) - gridStart.x;
-        float auxY = (worldPos.y / nodeSize.y) - gridStart.y;
-        float auxZ = (worldPos.z / nodeSize.z) - gridStart.z;
-        int x = (int)Math.Round(auxX, MidpointRounding.AwayFromZero);
-        int y = (int)Math.Round(auxY, MidpointRounding.AwayFromZero);
-        int z = (int)Math.Round(auxZ, MidpointRounding.AwayFromZero);
+        float fX = (worldPos.x / nodeSize.x);
+        float fY = (worldPos.y / nodeSize.y);
+        float fZ = (worldPos.z / nodeSize.z);
+        int x = (int)Mathf.Floor(fX);
+        int y = (int)Mathf.Floor(fY);
+        int z = (int)Mathf.Floor(fZ);
         if (x < 0 || x > gridSize.x - 1) return null;
         if (y < 0 || y > gridSize.y - 1) return null;
         if (z < 0 || z > gridSize.z - 1) return null;
@@ -172,15 +166,15 @@ public class GridGenerator : MonoBehaviour
 
     public Vector3 ClampWorldPosToGrid(Vector3 worldPos, Vector3 innerLimits)
     {
-        float minX = gridStart.x - nodeStart.x;
+        float minX = gridStart.x + nodeStart.x;
         float maxX = minX + (gridSize.x * nodeSize.x);
         minX += innerLimits.x;
         maxX -= innerLimits.x;
 
-        float minY = gridStart.y - nodeStart.y;
+        float minY = gridStart.y + nodeStart.y;
         float maxY = minY + (gridSize.y * nodeSize.y);
 
-        float minZ = gridStart.z - nodeStart.z;
+        float minZ = gridStart.z + nodeStart.z;
         float maxZ = minZ + (gridSize.z * nodeSize.z);
         minZ += innerLimits.z;
         maxZ -= innerLimits.z;

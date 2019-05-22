@@ -46,7 +46,7 @@ MonoBehaviour:
   m_EditorClassIdentifier: 
   prefab_GridNode: {fileID: 3957696406653905729, guid: f59df7fbfd6b0cf42803de3c863ed384,
     type: 3}
-  gridSize: {x: 40, y: 2, z: 40}
+  gridSize: {x: 40, y: 1, z: 40}
   gridStart: {x: 0.5, y: 0, z: 0.5}
   nodeSize: {x: 1, y: 2.5, z: 1}
   nodeStart: {x: -0.5, y: 0, z: -0.5}

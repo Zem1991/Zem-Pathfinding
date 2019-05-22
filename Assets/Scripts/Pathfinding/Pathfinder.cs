@@ -43,6 +43,7 @@ public class Pathfinder
                     currentPN = openList[i];
                 }
             }
+
             openList.Remove(currentPN);
             closedList.Add(currentPN.gridNode.id);
 
