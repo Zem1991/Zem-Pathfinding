@@ -9,11 +9,7 @@ public class GridGeneratorGizmos : MonoBehaviour
     private GridGenerator gridGenerator;
     private bool[,,] blockedNodes;
 
-    public LayerMask obstaclesLayer;
-    public Vector3 screenToGridPos;
-
     public bool drawIfSelected = true;
-    public bool drawAroundMouseOnly = true;
     public int currentFloor = 0;
     public Vector3Int nodesAroundMouse = new Vector3Int(4, 0, 4);
     public bool drawGridGeneratorGizmos = true;
@@ -27,6 +23,7 @@ public class GridGeneratorGizmos : MonoBehaviour
     void Awake()
     {
         UpdateData();
+        BakePreviewGrid();
     }
 
     void Update()
@@ -36,42 +33,24 @@ public class GridGeneratorGizmos : MonoBehaviour
 
     void OnDrawGizmos()
     {
-        if (!drawIfSelected) DrawGizmos();
+        if (!drawIfSelected && enabled) DrawGizmos();
     }
 
     void OnDrawGizmosSelected()
     {
-        if (drawIfSelected) DrawGizmos();
+        if (drawIfSelected && enabled) DrawGizmos();
     }
-    public Vector3 ScreenToGridPoint(Camera cam, int floor)
+
+    public void BakePreviewGrid()
     {
-        // create a plane whose normal points to +Y:
-        Plane hPlane = new Plane(Vector3.up, new Vector3(0, floor * gridGenerator.nodeSize.y, 0));
-
-        Vector3 position = cam.ScreenToWorldPoint(Input.mousePosition);
-        position = Event.current.mousePosition;
-
-        // Plane.Raycast stores the distance from ray.origin to the hit point in this variable:
-        Ray ray = HandleUtility.GUIPointToWorldRay(position);
-
-        // if the ray hits the plane...
-        if (hPlane.Raycast(ray, out float distance))
-        {
-            // get the hit point:
-            screenToGridPos = ray.GetPoint(distance);
-        }
-        return screenToGridPos;
+        Vector3Int gridSize = gridGenerator.gridSize;
+        blockedNodes = new bool[gridSize.x, gridSize.y, gridSize.z];
     }
 
     private void UpdateData()
     {
         gridGenerator = GetComponent<GridGenerator>();
         if (!gridGenerator) throw new MissingComponentException("Missing component: GridGenerator");
-
-        Vector3Int gridSize = gridGenerator.gridSize;
-        blockedNodes = new bool[gridSize.x, gridSize.y, gridSize.z];
-
-        obstaclesLayer = LayerMask.GetMask("Obstacles");
     }
 
     private void DrawGizmos()
@@ -83,38 +62,36 @@ public class GridGeneratorGizmos : MonoBehaviour
 
         if (drawGridNodeGizmos || drawConnectionGizmos)
         {
-            if (Camera.current == null) return;
+            if (blockedNodes == null) return;
 
-            for (int floor = 0; floor < gridGenerator.gridSize.y; floor++)
+            Camera cam = FindObjectOfType<Camera>();
+            Vector3? worldPos = ScreenToWorldPoint(cam);
+            if (worldPos == null) return;
+
+            Vector3Int? nodeIdAttempt = gridGenerator.GridNodeIdFromWorldPosition((Vector3)worldPos);
+            if (nodeIdAttempt == null) return;
+            Vector3Int nodeId = (Vector3Int)nodeIdAttempt;
+
+            int minX = Mathf.Max(0, nodeId.x - nodesAroundMouse.x);
+            int maxX = Mathf.Min(gridGenerator.gridSize.x, nodeId.x + nodesAroundMouse.x);
+            int minY = Mathf.Max(0, nodeId.y - nodesAroundMouse.y);
+            int maxY = Mathf.Min(gridGenerator.gridSize.y, nodeId.y + nodesAroundMouse.y);
+            int minZ = Mathf.Max(0, nodeId.z - nodesAroundMouse.z);
+            int maxZ = Mathf.Min(gridGenerator.gridSize.z, nodeId.z + nodesAroundMouse.z);
+
+            for (int floor = minY; floor <= maxY; floor++)
             {
-                for (int row = 0; row < gridGenerator.gridSize.z; row++)
+                for (int row = minZ; row <= maxZ; row++)
                 {
-                    for (int col = 0; col < gridGenerator.gridSize.x; col++)
+                    for (int col = minX; col <= maxX; col++)
                     {
                         Vector3 pos = Vector3.Scale(new Vector3(col, floor, row), gridGenerator.nodeSize) + gridGenerator.gridStart;
                         Vector3 size = gridGenerator.nodeSize;
-                        Collider[] colliders = Physics.OverlapBox(pos, size / 2.001F, Quaternion.identity, obstaclesLayer);
+                        Collider[] colliders = Physics.OverlapBox(pos, size / 2.001F, Quaternion.identity, gridGenerator.layerObstacles);
                         blockedNodes[col, floor, row] = (colliders.Length > 0);
 
-                        bool canDrawNode = true;
-                        if (drawAroundMouseOnly)
-                        {
-                            Camera cam = FindObjectOfType<Camera>();
-                            Vector3? worldPos = gridGenerator.ScreenToGridPoint(cam, currentFloor);
-                            if (worldPos == null) return;
-
-                            Vector3 gridPos = gridGenerator.ClampWorldPosToGrid((Vector3)worldPos, Vector3.zero);
-                            Vector3Int centralNodeId = (Vector3Int)gridGenerator.GridNodeIdFromWorldPosition(gridPos);
-
-                            if (Mathf.Abs(centralNodeId.x - col) > nodesAroundMouse.x) canDrawNode = false;
-                            if (Mathf.Abs(centralNodeId.y - floor) > nodesAroundMouse.y) canDrawNode = false;
-                            if (Mathf.Abs(centralNodeId.z - row) > nodesAroundMouse.z) canDrawNode = false;
-                        }
-                        if (canDrawNode)
-                        {
-                            if (drawGridNodeGizmos) DrawGridNodeGizmos(col, floor, row, pos, size);
-                            if (drawConnectionGizmos) DrawConnectionGizmos(col, floor, row);
-                        }
+                        if (drawGridNodeGizmos) DrawGridNodeGizmos(col, floor, row, pos, size);
+                        if (drawConnectionGizmos) DrawConnectionGizmos(col, floor, row);
                     }
                 }
             }
@@ -148,45 +125,99 @@ public class GridGeneratorGizmos : MonoBehaviour
 
         Gizmos.color = connection;
         Vector3 startPos = Vector3.Scale(new Vector3(col, floor, row), gridGenerator.nodeSize);
-        int x, y, z;
+        int x, z;
+
         if (col > 0)
         {
             x = col - 1;
-            y = floor;
             z = row;
-            DrawConnection(startPos, x, y, z);
+            DrawConnectionGizmosAux(startPos, x, floor, z);
+
+            if (row > 0)
+            {
+                x = col - 1;
+                z = row - 1;
+                if (!blockedNodes[col, floor, z] && !blockedNodes[x, floor, row])
+                    DrawConnectionGizmosAux(startPos, x, floor, z);
+            }
+
+            if (row < gridGenerator.gridSize.z - 1)
+            {
+                x = col - 1;
+                z = row + 1;
+                if (!blockedNodes[col, floor, z] && !blockedNodes[x, floor, row])
+                    DrawConnectionGizmosAux(startPos, x, floor, z);
+            }
         }
+
+        if (col < gridGenerator.gridSize.x - 1)
+        {
+            x = col + 1;
+            z = row;
+            DrawConnectionGizmosAux(startPos, x, floor, z);
+
+            if (row > 0)
+            {
+                x = col + 1;
+                z = row - 1;
+                if (!blockedNodes[col, floor, z] && !blockedNodes[x, floor, row])
+                    DrawConnectionGizmosAux(startPos, x, floor, z);
+            }
+
+            if (row < gridGenerator.gridSize.z - 1)
+            {
+                x = col + 1;
+                z = row + 1;
+                if (!blockedNodes[col, floor, z] && !blockedNodes[x, floor, row])
+                    DrawConnectionGizmosAux(startPos, x, floor, z);
+            }
+        }
+
         if (row > 0)
         {
             x = col;
-            y = floor;
             z = row - 1;
-            DrawConnection(startPos, x, y, z);
+            DrawConnectionGizmosAux(startPos, x, floor, z);
         }
-        if (col > 0 && row > 0)
+
+        if (row < gridGenerator.gridSize.z - 1)
         {
-            x = col - 1;
-            y = floor;
-            z = row - 1;
-            if (!blockedNodes[col, y, z] && !blockedNodes[x, y, row])
-                DrawConnection(startPos, x, y, z);
-        }
-        if (col < gridGenerator.gridSize.x - 1 && row > 0)
-        {
-            x = col + 1;
-            y = floor;
-            z = row - 1;
-            if (!blockedNodes[col, y, z] && !blockedNodes[x, y, row])
-                DrawConnection(startPos, x, y, z);
+            x = col;
+            z = row + 1;
+            DrawConnectionGizmosAux(startPos, x, floor, z);
         }
     }
 
-    private void DrawConnection(Vector3 startPos, int x, int y, int z)
+    private void DrawConnectionGizmosAux(Vector3 startPos, int x, int y, int z)
     {
         if (!blockedNodes[x, y, z])
         {
             Vector3 targetPos = Vector3.Scale(new Vector3(x, y, z), gridGenerator.nodeSize);
+            targetPos = Vector3.Lerp(startPos, targetPos, 0.4F);
+            startPos = Vector3.Lerp(startPos, targetPos, 0.15F);
             Gizmos.DrawLine(startPos + gridGenerator.gridStart, targetPos + gridGenerator.gridStart);
         }
+    }
+
+    private Vector3? ScreenToWorldPoint(Camera cam)
+    {
+        //Create a plane whose normal points to +Y. We will raycast against this at the current floor height.
+        Plane hPlane = new Plane(Vector3.up, new Vector3(0, currentFloor * gridGenerator.nodeSize.y, 0));
+
+        Ray ray;
+        if (cam != null && Application.isPlaying && !EditorApplication.isPaused)
+        {
+            ray = cam.ScreenPointToRay(Input.mousePosition);
+        }
+        else
+        {
+            ray = HandleUtility.GUIPointToWorldRay(Event.current.mousePosition);
+        }
+
+        if (hPlane.Raycast(ray, out float distance))
+        {
+            return ray.GetPoint(distance);
+        }
+        return null;
     }
 }

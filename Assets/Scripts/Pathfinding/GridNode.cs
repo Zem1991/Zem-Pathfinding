@@ -32,33 +32,13 @@ public class GridNode : MonoBehaviour
         
     }
 
+    /* This comment is here just to remind me of this:
+     * There can be too many GridNodes on a Scene at any given time. Having an Update function ON EACH AND EVERY ONE may not be the best idea.
     public void Update()
     {
         
     }
-
-    //Commented because not in use
-    //public List<OctoDirXZ> GetNeighbours()
-    //{
-    //    List<OctoDirXZ> result = new List<OctoDirXZ>();
-    //    OctoDirXZ dir = OctoDirXZ.BACK_LEFT;
-    //    if (GetNeighbour(dir)) result.Add(dir);
-    //    dir = OctoDirXZ.BACK;
-    //    if (GetNeighbour(dir)) result.Add(dir);
-    //    dir = OctoDirXZ.BACK_RIGHT;
-    //    if (GetNeighbour(dir)) result.Add(dir);
-    //    dir = OctoDirXZ.LEFT;
-    //    if (GetNeighbour(dir)) result.Add(dir);
-    //    dir = OctoDirXZ.RIGHT;
-    //    if (GetNeighbour(dir)) result.Add(dir);
-    //    dir = OctoDirXZ.FRONT_LEFT;
-    //    if (GetNeighbour(dir)) result.Add(dir);
-    //    dir = OctoDirXZ.FRONT;
-    //    if (GetNeighbour(dir)) result.Add(dir);
-    //    dir = OctoDirXZ.FRONT_RIGHT;
-    //    if (GetNeighbour(dir)) result.Add(dir);
-    //    return result;
-    //}
+     */
 
     public List<OctoDirXZ> GetNeighboursConnected()
     {

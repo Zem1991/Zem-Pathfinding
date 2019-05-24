@@ -145,25 +145,6 @@ public class GridGenerator : MonoBehaviour
         return new Vector3Int(x, y, z);
     }
 
-    public Vector3? ScreenToGridPoint(Camera cam, int floor)
-    {
-        // create a plane whose normal points to +Y:
-        Plane hPlane = new Plane(Vector3.up, new Vector3(0, floor * nodeSize.y, 0));
-
-        // Plane.Raycast stores the distance from ray.origin to the hit point in this variable:
-        //position = Event.current.mousePosition;   //TODO MOVE THIS ELSEWHERE
-        //Vector3 position = cam.ScreenToWorldPoint(Input.mousePosition);
-        Ray ray = cam.ScreenPointToRay(Input.mousePosition);
-
-        // if the ray hits the plane...
-        if (hPlane.Raycast(ray, out float distance))
-        {
-            // get the hit point:
-            return ray.GetPoint(distance);
-        }
-        return null;
-    }
-
     public Vector3 ClampWorldPosToGrid(Vector3 worldPos, Vector3 innerLimits)
     {
         float minX = gridStart.x + nodeStart.x;
